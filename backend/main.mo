@@ -1,27 +1,29 @@
 import Float "mo:base/Float";
+import Array "mo:base/Array";
 
 actor Calculator {
-  // Addition function
-  public func add(x : Float, y : Float) : async Float {
-    return x + y;
-  };
+  public func calculate(stack : [Float]) : async ?Float {
+    if (stack.size() < 3) {
+      return null; // Not enough operands
+    };
 
-  // Subtraction function
-  public func subtract(x : Float, y : Float) : async Float {
-    return x - y;
-  };
+    let operand2 = stack[stack.size() - 1];
+    let operand1 = stack[stack.size() - 2];
+    let operator = stack[stack.size() - 3];
 
-  // Multiplication function
-  public func multiply(x : Float, y : Float) : async Float {
-    return x * y;
-  };
-
-  // Division function
-  public func divide(x : Float, y : Float) : async ?Float {
-    if (y == 0) {
-      return null; // Return null for division by zero
+    if (operator == 0) {
+      return ?(operand1 + operand2);
+    } else if (operator == 1) {
+      return ?(operand1 - operand2);
+    } else if (operator == 2) {
+      return ?(operand1 * operand2);
+    } else if (operator == 3) {
+      if (operand2 == 0) {
+        return null; // Division by zero
+      };
+      return ?(operand1 / operand2);
     } else {
-      return ?(x / y);
+      return null; // Invalid operator
     };
   };
 }

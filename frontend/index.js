@@ -3,31 +3,29 @@ import { backend } from 'declarations/backend';
 const display = document.getElementById('display');
 const buttons = document.querySelectorAll('button');
 
-let currentValue = '';
-let operator = '';
-let previousValue = '';
+let stack = [];
+let currentInput = '';
 
 buttons.forEach(button => {
     button.addEventListener('click', () => {
         const value = button.textContent;
 
         if (value >= '0' && value <= '9' || value === '.') {
-            currentValue += value;
+            currentInput += value;
             updateDisplay();
-        } else if (['+', '-', '*', '/'].includes(value)) {
-            if (currentValue !== '') {
-                if (previousValue !== '') {
-                    calculate();
-                } else {
-                    previousValue = currentValue;
-                }
+        } else if (value === 'Enter') {
+            if (currentInput !== '') {
+                stack.push(parseFloat(currentInput));
+                currentInput = '';
+                updateDisplay();
             }
-            operator = value;
-            currentValue = '';
-        } else if (value === '=') {
-            if (currentValue !== '' && previousValue !== '') {
-                calculate();
+        } else if (['/', '*', '-', '+'].includes(value)) {
+            if (currentInput !== '') {
+                stack.push(parseFloat(currentInput));
+                currentInput = '';
             }
+            stack.push(parseFloat(button.getAttribute('data-op')));
+            calculate();
         } else if (value === 'C') {
             clear();
         }
@@ -35,50 +33,28 @@ buttons.forEach(button => {
 });
 
 function updateDisplay() {
-    display.value = currentValue;
+    display.value = stack.join(' ') + (currentInput ? ' ' + currentInput : '');
 }
 
 function clear() {
-    currentValue = '';
-    operator = '';
-    previousValue = '';
+    stack = [];
+    currentInput = '';
     updateDisplay();
 }
 
 async function calculate() {
-    const num1 = parseFloat(previousValue);
-    const num2 = parseFloat(currentValue);
-
-    try {
-        let result;
-        switch (operator) {
-            case '+':
-                result = await backend.add(num1, num2);
-                break;
-            case '-':
-                result = await backend.subtract(num1, num2);
-                break;
-            case '*':
-                result = await backend.multiply(num1, num2);
-                break;
-            case '/':
-                const divisionResult = await backend.divide(num1, num2);
-                if (divisionResult === null) {
-                    throw new Error('Division by zero');
-                }
-                result = divisionResult;
-                break;
+    if (stack.length >= 3) {
+        try {
+            const result = await backend.calculate(stack);
+            if (result === null) {
+                throw new Error('Calculation error');
+            }
+            stack = [result];
+            updateDisplay();
+        } catch (error) {
+            console.error('Calculation error:', error);
+            display.value = 'Error';
+            stack = [];
         }
-
-        currentValue = result.toString();
-        previousValue = '';
-        operator = '';
-        updateDisplay();
-    } catch (error) {
-        currentValue = 'Error';
-        previousValue = '';
-        operator = '';
-        updateDisplay();
-        console.error('Calculation error:', error);
     }
 }
